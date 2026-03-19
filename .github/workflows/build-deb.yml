@@ -32,9 +32,9 @@ jobs:
 
     - name: Build .deb package
       run: |
-        dpkg-deb --build edbian-branding
-        mv edbian-branding.deb edbian-branding-$VERSION.deb
-        ls -lh edbian-branding-$VERSION.deb
+        dpkg-deb --build .
+        mv $(basename $(pwd)).deb $(basename $(pwd))-$VERSION.deb
+        ls -lh $(basename $(pwd))-$VERSION.deb
 
     - name: Create or get release
       id: create_release
