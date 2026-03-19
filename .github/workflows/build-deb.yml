@@ -28,7 +28,7 @@ jobs:
     - name: Update DEBIAN/control version
       run: |
         sed -i "s/^Version:.*/Version: $VERSION/" edbian-branding/DEBIAN/control
-        cat edbian-branding/DEBIAN/control
+        cat DEBIAN/control
 
     - name: Build .deb package
       run: |
