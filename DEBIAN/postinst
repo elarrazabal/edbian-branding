@@ -1,0 +1,9 @@
+#!/bin/bash
+set -e
+
+echo "Aplicando branding Edbian para Calamares..."
+
+# Forzar permisos correctos
+chmod -R 755 /etc/calamares/branding/edbian || true
+
+exit 0

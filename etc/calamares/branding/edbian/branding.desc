@@ -1,0 +1,16 @@
+componentName: edbian
+welcomeStyleCalamares: true
+
+strings:
+    productName: Edbian
+    shortProductName: Edbian
+    version: "1.0"
+    shortVersion: "1.0"
+    bootloaderEntryName: Edbian
+    productUrl: "https://edbian.org"
+    supportUrl: "https://edbian.org/support"
+
+images:
+    productLogo: "logo.png"
+    productIcon: "logo.png"
+    welcome: "welcome.png"
