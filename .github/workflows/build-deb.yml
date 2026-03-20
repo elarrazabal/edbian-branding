@@ -31,8 +31,8 @@ jobs:
 
     - name: Build .deb package (from repo root)
       run: |
-        dpkg-deb --build .
-        mv *.deb edbian-branding-$VERSION.deb
+        dpkg-deb --build . edbian-branding.deb
+        mv edbian-branding.deb edbian-branding-$VERSION.deb
         ls -lh edbian-branding-$VERSION.deb
 
     - name: Create or get release
