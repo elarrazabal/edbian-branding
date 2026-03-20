@@ -1,9 +1,15 @@
 name: Build & Release Edbian Branding .deb
 
+name: Build & Release Edbian Branding .deb
+
 on:
   push:
     tags:
       - 'v*'
+
+permissions:
+  contents: write   # 🔥 ESTO ES LA CLAVE
+
 
 jobs:
   build-and-release:
