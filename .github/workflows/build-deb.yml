@@ -36,36 +36,64 @@ jobs:
         ls -lh edbian-branding-$VERSION.deb
 
     - name: Create or get release
+      id: release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        RELEASE_ID=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-          https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/v$VERSION | jq -r '.id')
+        echo "Checking release for tag v$VERSION"
 
-        if [ "$RELEASE_ID" == "null" ]; then
-          echo "Creating release v$VERSION..."
-          RESPONSE=$(curl -s -X POST -H "Authorization: token $GITHUB_TOKEN" \
+        RESPONSE=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+          https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/v$VERSION)
+
+        RELEASE_ID=$(echo "$RESPONSE" | jq -r '.id')
+
+        if [ "$RELEASE_ID" == "null" ] || [ -z "$RELEASE_ID" ]; then
+          echo "Release does not exist. Creating..."
+
+          RESPONSE=$(curl -s -X POST \
+            -H "Authorization: token $GITHUB_TOKEN" \
             -H "Content-Type: application/json" \
-            -d "{\"tag_name\": \"v$VERSION\", \"name\": \"v$VERSION\", \"draft\": false, \"prerelease\": false}" \
+            -d "{
+              \"tag_name\": \"v$VERSION\",
+              \"name\": \"v$VERSION\",
+              \"draft\": false,
+              \"prerelease\": false
+            }" \
             https://api.github.com/repos/${GITHUB_REPOSITORY}/releases)
 
-          RELEASE_ID=$(echo $RESPONSE | jq -r '.id')
+          echo "$RESPONSE"
+
+          RELEASE_ID=$(echo "$RESPONSE" | jq -r '.id')
         else
-          echo "Release already exists"
+          echo "Release already exists: $RELEASE_ID"
+        fi
+
+        if [ "$RELEASE_ID" == "null" ] || [ -z "$RELEASE_ID" ]; then
+          echo "ERROR: Release creation failed"
+          exit 1
         fi
 
         echo "RELEASE_ID=$RELEASE_ID" >> $GITHUB_ENV
 
     - name: Check if asset already exists
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        ASSET_NAME="edbian-branding-$VERSION.deb"
-        ASSET_ID=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-          https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/$RELEASE_ID/assets \
-          | jq -r ".[] | select(.name==\"$ASSET_NAME\") | .id")
+        if [ "$RELEASE_ID" == "null" ] || [ -z "$RELEASE_ID" ]; then
+          echo "ERROR: RELEASE_ID is invalid"
+          exit 1
+        fi
 
-        if [ -z "$ASSET_ID" ]; then
+        ASSET_NAME="edbian-branding-$VERSION.deb"
+
+        RESPONSE=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+          https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/$RELEASE_ID/assets)
+
+        echo "$RESPONSE"
+
+        ASSET_ID=$(echo "$RESPONSE" | jq -r ".[] | select(.name==\"$ASSET_NAME\") | .id")
+
+        if [ -z "$ASSET_ID" ] || [ "$ASSET_ID" == "null" ]; then
           echo "ASSET_EXISTS=false" >> $GITHUB_ENV
         else
           echo "ASSET_EXISTS=true" >> $GITHUB_ENV
