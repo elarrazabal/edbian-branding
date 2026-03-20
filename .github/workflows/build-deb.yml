@@ -47,4 +47,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-
+    - name: Upload artifact (Actions)
+      uses: actions/upload-artifact@v4
+      with:
+        name: edbian-branding-deb
+        path: edbian-branding-$VERSION.deb
