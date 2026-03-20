@@ -1,7 +1,5 @@
 name: Build & Release Edbian Branding .deb
 
-name: Build & Release Edbian Branding .deb
-
 on:
   push:
     tags:
