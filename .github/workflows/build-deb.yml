@@ -29,67 +29,18 @@ jobs:
         sed -i "s/^Version:.*/Version: $VERSION/" DEBIAN/control
         cat DEBIAN/control
 
-    - name: Build .deb package (from repo root)
+    - name: Build .deb
       run: |
         dpkg-deb --build . edbian-branding.deb
         mv edbian-branding.deb edbian-branding-$VERSION.deb
-        ls -lh edbian-branding-$VERSION.deb
 
-    - name: Create GitHub Release
-      id: create_release
+    - name: Create Release & Upload Asset
       uses: softprops/action-gh-release@v1
       with:
         tag_name: v${{ env.VERSION }}
         name: v${{ env.VERSION }}
-        draft: false
-        prerelease: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        
-    - name: Upload .deb to Release
-      uses: softprops/action-gh-release@v1
-      with:
         files: edbian-branding-${{ env.VERSION }}.deb
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Check if asset already exists
-      env:
-         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        if [ "$RELEASE_ID" == "null" ] || [ -z "$RELEASE_ID" ]; then
-          echo "ERROR: RELEASE_ID is invalid"
-          exit 1
-        fi
 
-        ASSET_NAME="edbian-branding-$VERSION.deb"
-
-        RESPONSE=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-          https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/$RELEASE_ID/assets)
-
-        echo "$RESPONSE"
-
-        ASSET_ID=$(echo "$RESPONSE" | jq -r ".[] | select(.name==\"$ASSET_NAME\") | .id")
-
-        if [ -z "$ASSET_ID" ] || [ "$ASSET_ID" == "null" ]; then
-          echo "ASSET_EXISTS=false" >> $GITHUB_ENV
-        else
-          echo "ASSET_EXISTS=true" >> $GITHUB_ENV
-        fi
-
-    - name: Upload .deb to GitHub Release
-      if: env.ASSET_EXISTS == 'false'
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        curl -s -X POST \
-          -H "Authorization: token $GITHUB_TOKEN" \
-          -H "Content-Type: application/octet-stream" \
-          --data-binary @edbian-branding-$VERSION.deb \
-          "https://uploads.github.com/repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}/assets?name=edbian-branding-$VERSION.deb"
-
-    - name: Upload artifact (Actions)
-      uses: actions/upload-artifact@v4
-      with:
-        name: edbian-branding-deb
-        path: edbian-branding-$VERSION.deb
