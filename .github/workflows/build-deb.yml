@@ -35,45 +35,23 @@ jobs:
         mv edbian-branding.deb edbian-branding-$VERSION.deb
         ls -lh edbian-branding-$VERSION.deb
 
-    - name: Create or get release
-      id: release
+    - name: Create GitHub Release
+      id: create_release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ env.VERSION }}
+        name: v${{ env.VERSION }}
+        draft: false
+        prerelease: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        echo "Checking release for tag v$VERSION"
-
-        RESPONSE=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-          https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/v$VERSION)
-
-        RELEASE_ID=$(echo "$RESPONSE" | jq -r '.id')
-
-        if [ "$RELEASE_ID" == "null" ] || [ -z "$RELEASE_ID" ]; then
-          echo "Release does not exist. Creating..."
-
-          RESPONSE=$(curl -s -X POST \
-            -H "Authorization: token $GITHUB_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d "{
-              \"tag_name\": \"v$VERSION\",
-              \"name\": \"v$VERSION\",
-              \"draft\": false,
-              \"prerelease\": false
-            }" \
-            https://api.github.com/repos/${GITHUB_REPOSITORY}/releases)
-
-          echo "$RESPONSE"
-
-          RELEASE_ID=$(echo "$RESPONSE" | jq -r '.id')
-        else
-          echo "Release already exists: $RELEASE_ID"
-        fi
-
-        if [ "$RELEASE_ID" == "null" ] || [ -z "$RELEASE_ID" ]; then
-          echo "ERROR: Release creation failed"
-          exit 1
-        fi
-
-        echo "RELEASE_ID=$RELEASE_ID" >> $GITHUB_ENV
+        
+    - name: Upload .deb to Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: edbian-branding-${{ env.VERSION }}.deb
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Check if asset already exists
       env:
