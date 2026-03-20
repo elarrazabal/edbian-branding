@@ -3,7 +3,7 @@ name: Build & Release Edbian Branding .deb
 on:
   push:
     tags:
-      - 'v*'   # solo tags que empiecen con "v", ej: v1.0
+      - 'v*'
 
 jobs:
   build-and-release:
@@ -19,7 +19,6 @@ jobs:
         sudo apt install -y dpkg-dev fakeroot curl jq
 
     - name: Determine version
-      id: version
       run: |
         VERSION=$(echo ${GITHUB_REF_NAME} | sed 's/^v//')
         echo "VERSION=$VERSION" >> $GITHUB_ENV
@@ -30,40 +29,42 @@ jobs:
         sed -i "s/^Version:.*/Version: $VERSION/" DEBIAN/control
         cat DEBIAN/control
 
-    - name: Build .deb package
+    - name: Build .deb package (from repo root)
       run: |
-        dpkg-deb --build .
-        mv $(basename $(pwd)).deb $(basename $(pwd))-$VERSION.deb
-        ls -lh $(basename $(pwd))-$VERSION.deb
+        dpkg-deb --build . edbian-branding.deb
+        mv edbian-branding.deb edbian-branding-$VERSION.deb
+        ls -lh edbian-branding-$VERSION.deb
 
     - name: Create or get release
-      id: create_release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        # Comprueba si la release existe
         RELEASE_ID=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
           https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/v$VERSION | jq -r '.id')
+
         if [ "$RELEASE_ID" == "null" ]; then
-          echo "Release v$VERSION no existe, creando..."
+          echo "Creating release v$VERSION..."
           RESPONSE=$(curl -s -X POST -H "Authorization: token $GITHUB_TOKEN" \
             -H "Content-Type: application/json" \
             -d "{\"tag_name\": \"v$VERSION\", \"name\": \"v$VERSION\", \"draft\": false, \"prerelease\": false}" \
             https://api.github.com/repos/${GITHUB_REPOSITORY}/releases)
+
           RELEASE_ID=$(echo $RESPONSE | jq -r '.id')
         else
-          echo "Release v$VERSION ya existe: $RELEASE_ID"
+          echo "Release already exists"
         fi
+
         echo "RELEASE_ID=$RELEASE_ID" >> $GITHUB_ENV
 
-    - name: Check if asset exists
-      id: check_asset
+    - name: Check if asset already exists
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         ASSET_NAME="edbian-branding-$VERSION.deb"
         ASSET_ID=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-          https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/$RELEASE_ID/assets | jq -r ".[] | select(.name==\"$ASSET_NAME\") | .id")
+          https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/$RELEASE_ID/assets \
+          | jq -r ".[] | select(.name==\"$ASSET_NAME\") | .id")
+
         if [ -z "$ASSET_ID" ]; then
           echo "ASSET_EXISTS=false" >> $GITHUB_ENV
         else
@@ -80,9 +81,8 @@ jobs:
           -H "Content-Type: application/octet-stream" \
           --data-binary @edbian-branding-$VERSION.deb \
           "https://uploads.github.com/repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}/assets?name=edbian-branding-$VERSION.deb"
-        echo "Asset uploaded successfully"
 
-    - name: Upload artifact to Actions
+    - name: Upload artifact (Actions)
       uses: actions/upload-artifact@v4
       with:
         name: edbian-branding-deb
