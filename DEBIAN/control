@@ -6,3 +6,5 @@ Architecture: all
 Maintainer: Edbian Team <elarrazabal@gmail.com>
 Description: Branding personalizado para Calamares (Edbian)
 Depends: calamares
+Conflicts: calamares-settings-debian
+Replaces: calamares-settings-debian
