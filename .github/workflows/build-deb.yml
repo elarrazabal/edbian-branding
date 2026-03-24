@@ -36,8 +36,8 @@ jobs:
     - name: Build .deb
       run: |
         mkdir pkg
-	rsync -a --exclude='.git' --exclude='.github' --exclude='intrucciones' --exclude='README*' ./ pkg/
-	dpkg-deb --build pkg edbian-branding.deb
+        rsync -a --exclude='.git' --exclude='.github' --exclude='intrucciones' --exclude='README*' ./ pkg/
+        dpkg-deb --build pkg edbian-branding.deb
         mv edbian-branding.deb edbian-branding-$VERSION.deb
 
     - name: Create Release & Upload Asset
